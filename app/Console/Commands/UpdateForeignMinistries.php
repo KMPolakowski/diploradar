@@ -107,7 +107,6 @@ class UpdateForeignMinistries extends Command
             }
 
             $th = $rows->find("th", 0);
-
             if (is_null($th)) {
                 continue;
             }
@@ -130,9 +129,9 @@ class UpdateForeignMinistries extends Command
         }
 
         $foreignMinistry = ForeignMinistry::where('wikipage_url', $url)
-        ->first();
+            ->first();
 
-        dump([$rowName, $webSite, $minister, $headquarters]);
+        // dump([$rowName, $webSite, $minister, $headquarters]);
 
         if (!isset($foreignMinistry)) {
             $foreignMinistry = new ForeignMinistry;

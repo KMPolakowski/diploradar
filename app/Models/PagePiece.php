@@ -9,7 +9,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Contracts\Auth\Authenticatable as AuthenticatableContract;
 use Illuminate\Contracts\Auth\Access\Authorizable as AuthorizableContract;
 
-class ForeignMinistry extends Model implements AuthenticatableContract, AuthorizableContract
+class PagePiece extends Model implements AuthenticatableContract, AuthorizableContract
 {
     use Authenticatable, Authorizable;
 
@@ -31,8 +31,8 @@ class ForeignMinistry extends Model implements AuthenticatableContract, Authoriz
         'password',
     ];
 
-    public function ForeignMinistryPages()
+    public function PageMinistries()
     {
-        return $this->hasMany(ForeignMinistryPage::class);
+        return $this->belongsToMany(ForeignMinistryPage::class);
     }
 }

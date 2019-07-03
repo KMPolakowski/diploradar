@@ -3,6 +3,7 @@
 namespace App\Console;
 
 use Illuminate\Console\Scheduling\Schedule;
+use App\Console\Commands\CrawlForeignMinistries;
 use App\Console\Commands\UpdateForeignMinistries;
 use Laravel\Lumen\Console\Kernel as ConsoleKernel;
 
@@ -14,7 +15,8 @@ class Kernel extends ConsoleKernel
      * @var array
      */
     protected $commands = [
-        UpdateForeignMinistries::class
+        UpdateForeignMinistries::class,
+        CrawlForeignMinistries::class
     ];
 
     /**
