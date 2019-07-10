@@ -15,9 +15,13 @@ class HtmlFilterService
     public function __construct(Dom $dom)
     {
         $this->dom = $dom;
-        $this->filterKeywords = [
-            "MINISTER", "MEETING", "VISIT", "CONVERSATION", "MEETS", "MET",
-            "MEET", "AMBASSADOR", "ANNOUNCEMENT", "INVITE",
+        $this->strongKeywords = [
+            "MINISTER", "PRESIDENT", "AMBASSADOR", "DEPUTY", "CONSUL", "FOREIGN OFFICER",
+            "REPRESENTATIVE", "COUNTERPART", "SIGNED"
+        ];
+        $this->weakKeywords = [
+            "SPOKE", "MET", "MEETING", "MEETS", "SIGNED", "SIGNING", "PLANNED", "TALKED", "VISITED",
+            "HOLDS"
         ];
     }
 
@@ -37,57 +41,115 @@ class HtmlFilterService
         if ($foreignMinistryPage instanceof ForeignMinistryPage) {
             return;
         }
+        
+        dump($url->getPath());
+
+
+        // TX Would be nice
 
         $foreignMinistryPage = new ForeignMinistryPage;
 
         $foreignMinistryPage->foreign_ministry_id = $foreignMinistryId;
         $foreignMinistryPage->url = $url->getPath();
-        
-        $interestingPieces = $this->extractInterestingPagePieces($response);
-
         $foreignMinistryPage->save();
+
+        $pagePieces = [];
+        
+        foreach ($this->extractInterestingNodes($response) as $node) {
+            $html = $node->outerHtml();
+
+            $alreadyExisting = PagePiece::
+                whereHas("ForeignMinistryPage.ForeignMinistry")
+                    ->where("html", $html)
+                    ->first();
+
+            if ($alreadyExisting) {
+                continue;
+            }
+
+            $pagePiece = new PagePiece;
+            $pagePiece->html = $html;
+            $pagePieces[] = $pagePiece;
+        }
+
+        $foreignMinistryPage->PagePiece()->saveMany($pagePieces);
     }
 
-    private function extractInterestingPagePieces(ResponseInterface $response) : array
+    private function extractInterestingNodes(ResponseInterface $response) : array
     {
         $document = $this->dom->loadStr((string) $response->getBody());
 
         // $textHolders = $document->getElementsByTag("p, h, h1, h2, h3");
         $textHolders = $document->getElementsByTag("p");
 
-        $interestingTags = [];
+        $interestingNodes = [];
 
         foreach ($textHolders as $p) {
             if ($this->isInteresting($p)) {
-                $this->handleDuplicateTextFromSamePage($p, $interestingTags);
+                $interestingNodes[] = $this->getParent($p, 3);
             }
         }
 
+        // $interestingPieces = $this->handleDuplicateTextFromSamePage($interestingTags);
         /**
          * Problems:
          *  > Duplicate nodes on same page => for each parent node get the deepest children and check if these children
          *  have been already filtered out, on duplicates reject the node that is bigger and thus further away from these
          *  children
-         *  
+         *
          *  > linking elements (shortcuts) from different pages => ignore nodes that are "a" tags or contain an href
+         *
          *  > Crawling of same page multiple times
          */
+        
 
-
-        return $interestingPieces;
+        return $interestingNodes;
     }
 
-    private function handleDuplicateTextFromSamePage(AbstractNode $node, array &$alreadyFilteredTags) : void
+    private function handleDuplicateTextFromSamePage(array $alreadyFilteredTags) : array
     {
-        $wordsFromNode = explode(" ", $node->text);
+        $deepestChildren = [];
 
-        foreach($alreadyFilteredTags as $tag)
-        {
-            $wordsFromTag = explode(" ", $tag->text);
+        foreach ($alreadyFilteredTags as $parentNode) {
+            $deepestChildren[] = $this->getDeepestChildrenAndTheirDepth($parentNode->getChildren());
+        }
+        
+        for ($i = 0; $i < count($deepestChildren); $i++) {
+            for ($y = $i+1; $y < count($deepestChildren-1); $y++) {
+                //compare objects
+                // dump($deepestChildren[$i]->innerHtml());
+                // dump($deepestChildren[$y]->innerHtml());
+                dump($deepestChildren[$i] == $deepestChildren[$y]);
 
-            if(count(\array_intersect($wordsFromNode, $wordsFromTag)) > )
+                if ($deepestChildren[$i] == $deepestChildren[$y]) {
+                    if ($deepestChildren[$i][0] > $deepestChildren[$y][0]) {
+                        $alreadyFilteredTags[$i] = null;
+                    } else {
+                        $alreadyFilteredTags[$y] = null;
+                    }
+                }
+            }
+        }
+        
+        return array_filter($alreadyFilteredTags);
+    }
+
+    private function getDeepestChildrenAndTheirDepth(array $nodes, ?int $depth = 0, ?array $children) : array
+    {
+        $depths = [];
+
+        if (!$node->hasChildren()) {
+            return null;
         }
 
+        /**
+         * Iterate,
+         */
+
+        foreach ($children as $child) {
+            if ($this->getDeepestChildrenAndTheirDepth($child->getChildren())) {
+            }
+        }
     }
 
     private function isInteresting($node) : bool
@@ -97,15 +159,22 @@ class HtmlFilterService
         
         $nodeText = strtoupper($node->text);
         
-        $foundKeywords = [];
+        $foundStrongKeywords = [];
+        $foundWeakKeywords = [];
 
-        foreach ($this->filterKeywords as $keyword) {
-            if (substr_count($nodeText, $keyword) > 0 && !in_array($keyword, $foundKeywords)) {
-                $foundKeywords[] = $keyword;
+        foreach ($this->strongKeywords as $keyword) {
+            if (substr_count($nodeText, $keyword) > 0 && !in_array($keyword, $foundStrongKeywords)) {
+                $foundStrongKeywords[] = $keyword;
+            }
+        }
+
+        foreach ($this->weakKeywords as $keyword) {
+            if (substr_count($nodeText, $keyword) > 0 && !in_array($keyword, $foundWeakKeywords)) {
+                $foundWeakKeywords[] = $keyword;
             }
         }
         
-        if (count($foundKeywords) < 2) {
+        if (count($foundStrongKeywords) < 2 && count($foundWeakKeywords) < 1) {
             return false;
         }
 

@@ -36,8 +36,12 @@ class CrawlForeignMinistries extends Command
     {
         parent::__construct();
 
-        $this->crawlable = ForeignMinistry::where("website", "!=", null)
-            ->get();
+        $this->crawlable = ForeignMinistry::where(
+            [
+            ["website", "!=", null],
+            ["id", ">", 7]
+            ]
+        )->get();
     }
 
     /**
@@ -48,16 +52,30 @@ class CrawlForeignMinistries extends Command
     public function handle()
     {
         $crawler = Crawler::create([RequestOptions::ALLOW_REDIRECTS => true,
-            RequestOptions::HEADERS => ["Accept-Language" => "en-US,en;q=0.5"],
-            ["User-Agent" => "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:67.0) Gecko/20100101 Firefox/67.0"]
-            ])
+            RequestOptions::HEADERS => ["Accept-Language" => "en-US,en;q=0.5",
+            "User-Agent" => "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:67.0) Gecko/20100101 Firefox/67.0"
+            ]])
             ->ignoreRobots()
             ->setMaximumDepth(5)
-            ->setDelayBetweenRequests(1000);
+            ->setMaximumResponseSize(1024 * 1024 * 2.5)
+            ->setDelayBetweenRequests(500);
 
         //TODO: Always try to append an EN to URL IF SITE IS NOT IN ENGLISH
 
         foreach ($this->crawlable as $ministry) {
+            if (!strpos($ministry->website, "/en")) {
+                $suffix = "/en";
+
+                if (substr($ministry->website, -1) === "/") {
+                    $suffix = "en";
+                }
+
+                $ministry->website .= $suffix;
+            }
+
+            dump("---------MINISTRY----------");
+            dump($ministry->id);
+
             $crawler
                 ->setCrawlObservers([
                     new ForeignMinistryCrawlObserver($ministry)

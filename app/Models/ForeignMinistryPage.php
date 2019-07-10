@@ -34,7 +34,7 @@ class ForeignMinistryPage extends Model implements AuthenticatableContract, Auth
         'password',
     ];
 
-    public function PagePieces()
+    public function PagePiece()
     {
         return $this->hasMany(PagePiece::class);
     }

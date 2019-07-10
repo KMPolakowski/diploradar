@@ -47,6 +47,6 @@ class ForeignMinistryCrawlObserver extends CrawlObserver
         RequestException $requestException,
         ?UriInterface $foundOnUrl = null
     ) {
-        // dump($requestException);
+        dump($requestException);
     }
 }

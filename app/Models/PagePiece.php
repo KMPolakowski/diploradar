@@ -13,6 +13,8 @@ class PagePiece extends Model implements AuthenticatableContract, AuthorizableCo
 {
     use Authenticatable, Authorizable;
 
+    protected $table = "page_piece";
+
     /**
      * The attributes that are mass assignable.
      *
@@ -31,8 +33,8 @@ class PagePiece extends Model implements AuthenticatableContract, AuthorizableCo
         'password',
     ];
 
-    public function PageMinistries()
+    public function ForeignMinistryPage()
     {
-        return $this->belongsToMany(ForeignMinistryPage::class);
+        return $this->belongsTo(ForeignMinistryPage::class);
     }
 }
