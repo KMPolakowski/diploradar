@@ -39,7 +39,7 @@ class CrawlForeignMinistries extends Command
         $this->crawlable = ForeignMinistry::where(
             [
             ["website", "!=", null],
-            ["id", ">", 7]
+            // ["id", ">", 7]
             ]
         )->get();
     }
@@ -56,12 +56,11 @@ class CrawlForeignMinistries extends Command
             "User-Agent" => "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:67.0) Gecko/20100101 Firefox/67.0"
             ]])
             ->ignoreRobots()
-            ->setMaximumDepth(5)
+            ->setMaximumDepth(100)
             ->setMaximumResponseSize(1024 * 1024 * 2.5)
-            ->setDelayBetweenRequests(500);
+            ->setDelayBetweenRequests(50);
 
-        //TODO: Always try to append an EN to URL IF SITE IS NOT IN ENGLISH
-
+        //Always try to append an EN to URL IF SITE IS NOT IN ENGLISH
         foreach ($this->crawlable as $ministry) {
             if (!strpos($ministry->website, "/en")) {
                 $suffix = "/en";

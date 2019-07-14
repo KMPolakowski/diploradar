@@ -16,12 +16,13 @@ class HtmlFilterService
     {
         $this->dom = $dom;
         $this->strongKeywords = [
-            "MINISTER", "PRESIDENT", "AMBASSADOR", "DEPUTY", "CONSUL", "FOREIGN OFFICER",
-            "REPRESENTATIVE", "COUNTERPART", "SIGNED"
+            "MINISTER", "MINISTRY", "PRESIDENT", "AMBASSADOR", "DEPUTY",
+            "REPRESENTATIVE", "COUNTERPART"
         ];
+        
         $this->weakKeywords = [
-            "SPOKE", "MET", "MEETING", "MEETS", "SIGNED", "SIGNING", "PLANNED", "TALKED", "VISITED",
-            "HOLDS"
+            "SPOKE", "MET", "MEETING", "MEETS", "SIGNED", "SIGNING", "TALKED", "VISITED",
+            "HOLDS", "CALLED", "CALLS", "CALL", "DISCUSS", "DISCUSSED"
         ];
     }
 
@@ -52,8 +53,6 @@ class HtmlFilterService
         $foreignMinistryPage->foreign_ministry_id = $foreignMinistryId;
         $foreignMinistryPage->url = $url->getPath();
         $foreignMinistryPage->save();
-
-        $pagePieces = [];
         
         foreach ($this->extractInterestingNodes($response) as $node) {
             $html = $node->outerHtml();
@@ -69,24 +68,29 @@ class HtmlFilterService
 
             $pagePiece = new PagePiece;
             $pagePiece->html = $html;
-            $pagePieces[] = $pagePiece;
+            $foreignMinistryPage->PagePiece()->save($pagePiece);
         }
-
-        $foreignMinistryPage->PagePiece()->saveMany($pagePieces);
     }
 
     private function extractInterestingNodes(ResponseInterface $response) : array
     {
-        $document = $this->dom->loadStr((string) $response->getBody());
+        $document = $this->dom->loadStr(
+            (string) $response->getBody()
+        );
 
         // $textHolders = $document->getElementsByTag("p, h, h1, h2, h3");
         $textHolders = $document->getElementsByTag("p");
+
+        // dump($textHolders->innerHtml());
 
         $interestingNodes = [];
 
         foreach ($textHolders as $p) {
             if ($this->isInteresting($p)) {
-                $interestingNodes[] = $this->getParent($p, 3);
+                $parents = $this->getParentIfEnglish($p, 3);
+                if ($parents !== null) {
+                    $interestingNodes[] = $parents;
+                }
             }
         }
 
@@ -103,7 +107,7 @@ class HtmlFilterService
          */
         
 
-        return $interestingNodes;
+        return array_filter($interestingNodes);
     }
 
     private function handleDuplicateTextFromSamePage(array $alreadyFilteredTags) : array
@@ -117,7 +121,7 @@ class HtmlFilterService
         for ($i = 0; $i < count($deepestChildren); $i++) {
             for ($y = $i+1; $y < count($deepestChildren-1); $y++) {
                 //compare objects
-                // dump($deepestChildren[$i]->innerHtml());
+                // dump($deepestChildren[$i]->innerPLANNEDHtml());
                 // dump($deepestChildren[$y]->innerHtml());
                 dump($deepestChildren[$i] == $deepestChildren[$y]);
 
@@ -158,39 +162,72 @@ class HtmlFilterService
         // reject the shorter text.
         
         $nodeText = strtoupper($node->text);
-        
-        $foundStrongKeywords = [];
-        $foundWeakKeywords = [];
 
-        foreach ($this->strongKeywords as $keyword) {
-            if (substr_count($nodeText, $keyword) > 0 && !in_array($keyword, $foundStrongKeywords)) {
-                $foundStrongKeywords[] = $keyword;
-            }
+        //remove stuff that contains not english characters
+        if (!$this->isEnglish($nodeText)) {
+            // dump($nodeText);
+            // dump("blah");
+            return false;
         }
 
-        foreach ($this->weakKeywords as $keyword) {
-            if (substr_count($nodeText, $keyword) > 0 && !in_array($keyword, $foundWeakKeywords)) {
-                $foundWeakKeywords[] = $keyword;
-            }
-        }
+        $words = explode(
+            " ",
+            $nodeText
+        );
+
+        $foundStrongKeywords = array_unique(
+            array_intersect(
+                $this->strongKeywords,
+                $words
+            )
+        );
+
+        $foundWeakKeywords = array_unique(
+            array_intersect(
+                $this->weakKeywords,
+                $words
+            )
+        );
         
-        if (count($foundStrongKeywords) < 2 && count($foundWeakKeywords) < 1) {
+        if (count($foundStrongKeywords) < 2 || count($foundWeakKeywords) < 1) {
             return false;
         }
 
         return true;
-
-        // dump("------------------------------------");
-        // dump($foundKeywords);
-        // dump("------------------------------------");
     }
 
-    private function getParent($node, int $parentDepth)
+    private function isEnglish(string $text) : bool
     {
-        if ($parentDepth === 0 || !$node->parent instanceof AbstractNode) {
+        $words = explode(" ", $text);
+
+        $amountOfNonEnglishWords = count(array_filter($words, function ($word) {
+            return preg_match("/[^A-Za-z0-9#$%^*()+=\-!–\[\]\';,´’.\/{}|“” " . '":<>?~\\\\]/', $word);
+        }));
+
+        // dump($amountOfNonEnglishWords);
+
+        return $amountOfNonEnglishWords <= 2;
+    }
+
+    private function getParentIfEnglish($node, int $parentDepth)
+    {
+        if ($parentDepth < 3 && !$this->areChildrenInEnglish($node)) {
+            return null;
+        } elseif ($parentDepth === 0 || !$node->parent instanceof AbstractNode) {
             return $node;
         }
 
-        return $this->getParent($node->parent, $parentDepth-1);
+        return $this->getParentIfEnglish($node->parent, $parentDepth-1);
+    }
+
+    private function areChildrenInEnglish(AbstractNode $node) : bool
+    {
+        foreach ($node->find("p") as $child) {
+            if (!$this->isEnglish($child->text)) {
+                return false;
+            }
+        }
+
+        return true;
     }
 }
