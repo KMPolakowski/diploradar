@@ -5,9 +5,11 @@ namespace App\Services;
 use PHPHtmlParser\Dom;
 use App\Models\PagePiece;
 use App\Models\ForeignMinistry;
+use Illuminate\Support\Facades\DB;
 use Psr\Http\Message\UriInterface;
 use App\Models\ForeignMinistryPage;
 use PHPHtmlParser\Dom\AbstractNode;
+use Illuminate\Database\QueryException;
 use Psr\Http\Message\ResponseInterface;
 
 class HtmlFilterService
@@ -16,7 +18,7 @@ class HtmlFilterService
     {
         $this->dom = $dom;
         $this->strongKeywords = [
-            "MINISTER", "MINISTRY", "PRESIDENT", "AMBASSADOR", "DEPUTY",
+            "MINISTER", "CHARGE D 'AFFAIRES", "MINISTERS", "MINISTRY", "PRESIDENT", "AMBASSADOR", "AMBASSADORS","DEPUTY",
             "REPRESENTATIVE", "COUNTERPART"
         ];
         
@@ -32,35 +34,41 @@ class HtmlFilterService
         ?UriInterface $foundOnUrl = null,
         int $foreignMinistryId
     ) : void {
-        $foreignMinistryPage = ForeignMinistryPage::with("ForeignMinistry")
-            ->where("url", (string) $url)
-            ->whereHas("ForeignMinistry", function ($query) use ($foreignMinistryId) {
-                $query->where("id", $foreignMinistryId);
-            })
+        dump($url->getPath());
+        
+        $foreignMinistryPage = ForeignMinistryPage::where([
+                ["url", $url->getPath()],
+                ["foreign_ministry_id", $foreignMinistryId]
+                ])
             ->first();
-
+        
         if ($foreignMinistryPage instanceof ForeignMinistryPage) {
             return;
         }
         
-        dump($url->getPath());
-
-
         // TX Would be nice
 
         $foreignMinistryPage = new ForeignMinistryPage;
 
         $foreignMinistryPage->foreign_ministry_id = $foreignMinistryId;
         $foreignMinistryPage->url = $url->getPath();
-        $foreignMinistryPage->save();
+
+        try {
+            $foreignMinistryPage->save();
+        } catch (QueryException $e) {
+            dump($e->getMessage());
+            return;
+        }
         
         foreach ($this->extractInterestingNodes($response) as $node) {
             $html = $node->outerHtml();
 
             $alreadyExisting = PagePiece::
-                whereHas("ForeignMinistryPage.ForeignMinistry")
-                    ->where("html", $html)
-                    ->first();
+                whereHas("ForeignMinistryPage.ForeignMinistry", function ($q) use ($foreignMinistryId) {
+                    $q->where(["id" => $foreignMinistryId]);
+                })
+                ->where("html", $html)
+                ->first();
 
             if ($alreadyExisting) {
                 continue;
@@ -78,10 +86,7 @@ class HtmlFilterService
             (string) $response->getBody()
         );
 
-        // $textHolders = $document->getElementsByTag("p, h, h1, h2, h3");
         $textHolders = $document->getElementsByTag("p");
-
-        // dump($textHolders->innerHtml());
 
         $interestingNodes = [];
 
@@ -94,7 +99,7 @@ class HtmlFilterService
             }
         }
 
-        // $interestingPieces = $this->handleDuplicateTextFromSamePage($interestingTags);
+        // $interestingPieces = $this->handleDupleeeeeecateTextFromSamePage($interestingTags);
         /**
          * Problems:
          *  > Duplicate nodes on same page => for each parent node get the deepest children and check if these children
@@ -110,52 +115,6 @@ class HtmlFilterService
         return array_filter($interestingNodes);
     }
 
-    private function handleDuplicateTextFromSamePage(array $alreadyFilteredTags) : array
-    {
-        $deepestChildren = [];
-
-        foreach ($alreadyFilteredTags as $parentNode) {
-            $deepestChildren[] = $this->getDeepestChildrenAndTheirDepth($parentNode->getChildren());
-        }
-        
-        for ($i = 0; $i < count($deepestChildren); $i++) {
-            for ($y = $i+1; $y < count($deepestChildren-1); $y++) {
-                //compare objects
-                // dump($deepestChildren[$i]->innerPLANNEDHtml());
-                // dump($deepestChildren[$y]->innerHtml());
-                dump($deepestChildren[$i] == $deepestChildren[$y]);
-
-                if ($deepestChildren[$i] == $deepestChildren[$y]) {
-                    if ($deepestChildren[$i][0] > $deepestChildren[$y][0]) {
-                        $alreadyFilteredTags[$i] = null;
-                    } else {
-                        $alreadyFilteredTags[$y] = null;
-                    }
-                }
-            }
-        }
-        
-        return array_filter($alreadyFilteredTags);
-    }
-
-    private function getDeepestChildrenAndTheirDepth(array $nodes, ?int $depth = 0, ?array $children) : array
-    {
-        $depths = [];
-
-        if (!$node->hasChildren()) {
-            return null;
-        }
-
-        /**
-         * Iterate,
-         */
-
-        foreach ($children as $child) {
-            if ($this->getDeepestChildrenAndTheirDepth($child->getChildren())) {
-            }
-        }
-    }
-
     private function isInteresting($node) : bool
     {
         // TODO: If there are two texts that contain n amount of same keywords then
@@ -165,8 +124,6 @@ class HtmlFilterService
 
         //remove stuff that contains not english characters
         if (!$this->isEnglish($nodeText)) {
-            // dump($nodeText);
-            // dump("blah");
             return false;
         }
 
@@ -189,7 +146,7 @@ class HtmlFilterService
             )
         );
         
-        if (count($foundStrongKeywords) < 2 || count($foundWeakKeywords) < 1) {
+        if (count($foundStrongKeywords) < 1 || count($foundWeakKeywords) < 1) {
             return false;
         }
 
@@ -203,8 +160,6 @@ class HtmlFilterService
         $amountOfNonEnglishWords = count(array_filter($words, function ($word) {
             return preg_match("/[^A-Za-z0-9#$%^*()+=\-!–\[\]\';,´’.\/{}|“” " . '":<>?~\\\\]/', $word);
         }));
-
-        // dump($amountOfNonEnglishWords);
 
         return $amountOfNonEnglishWords <= 2;
     }
