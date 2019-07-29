@@ -33,9 +33,7 @@ class HtmlFilterService
         ResponseInterface $response,
         ?UriInterface $foundOnUrl = null,
         int $foreignMinistryId
-    ) : void {
-        dump($url->getPath());
-        
+    ) : void {        
         $foreignMinistryPage = ForeignMinistryPage::where([
                 ["url", $url->getPath()],
                 ["foreign_ministry_id", $foreignMinistryId]
@@ -76,6 +74,7 @@ class HtmlFilterService
 
             $pagePiece = new PagePiece;
             $pagePiece->html = $html;
+            $pagePiece->text = $node->text(true);
             $foreignMinistryPage->PagePiece()->save($pagePiece);
         }
     }
@@ -92,7 +91,7 @@ class HtmlFilterService
 
         foreach ($textHolders as $p) {
             if ($this->isInteresting($p)) {
-                $parents = $this->getParentIfEnglish($p, 3);
+                $parents = $this->getParentIfEnglish($p, 7);
                 if ($parents !== null) {
                     $interestingNodes[] = $parents;
                 }

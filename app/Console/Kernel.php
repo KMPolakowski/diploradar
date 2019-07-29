@@ -6,6 +6,8 @@ use Illuminate\Console\Scheduling\Schedule;
 use App\Console\Commands\CrawlForeignMinistries;
 use App\Console\Commands\UpdateForeignMinistries;
 use Laravel\Lumen\Console\Kernel as ConsoleKernel;
+use App\Console\Commands\ExtractTextFromHtmlPagePieces;
+use App\Console\Commands\RemoveDuplicatePagePieces;
 
 class Kernel extends ConsoleKernel
 {
@@ -16,7 +18,9 @@ class Kernel extends ConsoleKernel
      */
     protected $commands = [
         UpdateForeignMinistries::class,
-        CrawlForeignMinistries::class
+        CrawlForeignMinistries::class,
+        ExtractTextFromHtmlPagePieces::class,
+        RemoveDuplicatePagePieces::class
     ];
 
     /**

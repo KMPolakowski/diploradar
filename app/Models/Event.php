@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Models\PagePiece;
+use App\Models\EventPerson;
 use App\Models\ForeignMinistry;
 use Illuminate\Auth\Authenticatable;
 use Laravel\Lumen\Auth\Authorizable;
@@ -10,17 +11,20 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Contracts\Auth\Authenticatable as AuthenticatableContract;
 use Illuminate\Contracts\Auth\Access\Authorizable as AuthorizableContract;
 
-class ForeignMinistryPage extends Model
+class Event extends Model
 {
-    protected $table = "foreign_ministry_page";
-
     public function PagePiece()
     {
         return $this->hasMany(PagePiece::class);
     }
 
-    public function ForeignMinistry()
+    public function Location()
     {
-        return $this->belongsTo(ForeignMinistry::class);
+        return $this->belongsTo(Location::class);
+    }
+
+    public function EventPerson()
+    {
+        return $this->hasMany(EventPerson::class);
     }
 }

@@ -39,9 +39,9 @@ class CrawlForeignMinistries extends Command
         $this->crawlable = ForeignMinistry::where(
             [
             ["website", "!=", null],
-            ["id", ">=", 96],
+            ["id", ">=" ,76],
             [
-                "id", "<=", 100
+                "id", "<=", 80
             ]
             ]
         )->get();
@@ -84,7 +84,6 @@ class CrawlForeignMinistries extends Command
                     )
                     ->ignoreRobots()
                     ->setMaximumResponseSize(1024 * 1024 * 2.5)
-                    ->setDelayBetweenRequests(1000)
                     ->setMaximumCrawlCount(5000);
 
         //Always try to append an EN to URL IF SITE IS NOT IN ENGLISH
