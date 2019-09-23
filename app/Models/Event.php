@@ -13,6 +13,8 @@ use Illuminate\Contracts\Auth\Access\Authorizable as AuthorizableContract;
 
 class Event extends Model
 {
+    protected $table = 'event';
+
     public function PagePiece()
     {
         return $this->hasMany(PagePiece::class);
@@ -26,5 +28,10 @@ class Event extends Model
     public function EventPerson()
     {
         return $this->hasMany(EventPerson::class);
+    }
+
+    public function Person()
+    {
+        return $this->belongsToMany(Person::class, 'event_persons');
     }
 }

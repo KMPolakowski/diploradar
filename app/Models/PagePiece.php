@@ -21,6 +21,6 @@ class PagePiece extends Model
 
     public function Event()
     {
-        return $this->hasOne(Event::class);
+        return $this->belongsTo(Event::class);
     }
 }

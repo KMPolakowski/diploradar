@@ -12,6 +12,8 @@ use Illuminate\Contracts\Auth\Access\Authorizable as AuthorizableContract;
 
 class EventPerson extends Model
 {
+    protected $table = 'event_persons';
+    
     public function Event()
     {
         return $this->belongsTo(Event::class);
