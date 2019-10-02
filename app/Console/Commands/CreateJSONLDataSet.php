@@ -49,14 +49,20 @@ class CreateJSONLDataSet extends Command
         );
 
         foreach ($events as $event) {
-
             $annotations = [];
+
+            $text = html_entity_decode(
+                trim($event->PagePiece[0]->text)
+            );
+
+            // dump($text);
+            // dump($event->id);
 
             foreach ($event->Person as $person) {
                 $annotations[] = $this->getAnnotation(
                     'person',
                     $person->name,
-                    $event->PagePiece[0]->text,
+                    $text,
                     $event->id
                 );
             }
@@ -65,7 +71,7 @@ class CreateJSONLDataSet extends Command
                 $annotations[] = $this->getAnnotation(
                     'location',
                     $event->location->name,
-                    $event->PagePiece[0]->text,
+                    $text,
                     $event->id
                 );
             }
@@ -74,7 +80,7 @@ class CreateJSONLDataSet extends Command
                 $annotations[] = $this->getAnnotation(
                     'happening_at',
                     $event->happening_at,
-                    $event->PagePiece[0]->text,
+                    $text,
                     $event->id
                 );
             }
@@ -83,7 +89,7 @@ class CreateJSONLDataSet extends Command
                 $annotations[] = $this->getAnnotation(
                     'published_at',
                     $event->published_at,
-                    $event->PagePiece[0]->text,
+                    $text,
                     $event->id
                 );
             }
@@ -91,11 +97,11 @@ class CreateJSONLDataSet extends Command
             $row = [
                 "annotations" => $annotations,
                 "text_snippet" => [
-                    "content" => $event->PagePiece[0]->text
+                    "content" => $text
                 ]
             ];
 
-            fwrite($file, json_encode($row) . "\n");
+            fwrite($file, json_encode($row, JSON_UNESCAPED_UNICODE|JSON_UNESCAPED_SLASHES|JSON_NUMERIC_CHECK) . "\n");
         }
 
         fclose($file);
@@ -104,17 +110,23 @@ class CreateJSONLDataSet extends Command
 
     private function getOffsets(string $needle, string $haystack, int $eventId): array
     {
-        $haystack = html_entity_decode($haystack);
+        $needle = trim($needle);
 
-        $startOffset = strpos(
+        $startOffset = mb_strpos(
             $haystack,
-            $needle
+            $needle,
+            null,
+            "UTF-8"
         );
 
-        if (!$startOffset) {
+        // dump($needle);
+        // dump($startOffset);
+
+        if (!\is_int($startOffset)) {
             dump($haystack);
+            dump($needle);
             throw new Exception(
-                sprintf('This data is crap. Event id %s sucks as couldn \'t find %s', $eventId, $needle)
+                sprintf('This data is crap. Event id %s sucks as couldn \'t find |%s|', $eventId, $needle)
             );
         }
 

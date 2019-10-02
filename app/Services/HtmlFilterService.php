@@ -33,7 +33,7 @@ class HtmlFilterService
         ResponseInterface $response,
         ?UriInterface $foundOnUrl = null,
         int $foreignMinistryId
-    ) : void {        
+    ) : void {
         $foreignMinistryPage = ForeignMinistryPage::where([
                 ["url", $url->getPath()],
                 ["foreign_ministry_id", $foreignMinistryId]
