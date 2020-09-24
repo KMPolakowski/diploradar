@@ -11,6 +11,9 @@ use PHPHtmlParser\Dom\InnerNode;
 use PHPHtmlParser\Dom\Collection;
 use PHPHtmlParser\Exceptions\EmptyCollectionException;
 
+/**
+ * Updates Foreign Ministries
+ */
 class UpdateForeignMinistries extends Command
 {
     /**
@@ -130,8 +133,6 @@ class UpdateForeignMinistries extends Command
 
         $foreignMinistry = ForeignMinistry::where('wikipage_url', $url)
             ->first();
-
-        // dump([$rowName, $webSite, $minister, $headquarters]);
 
         if (!isset($foreignMinistry)) {
             $foreignMinistry = new ForeignMinistry;

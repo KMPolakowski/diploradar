@@ -3,13 +3,15 @@
 namespace App\Console;
 
 use Illuminate\Console\Scheduling\Schedule;
-use App\Console\Commands\CrawlForeignMinistries;
 use App\Console\Commands\CreateJSONLDataSet;
-use App\Console\Commands\CreateJSONLForClassification;
+use App\Console\Commands\CrawlForeignMinistries;
+use App\Console\Commands\CreateCSVForClassification;
 use App\Console\Commands\UpdateForeignMinistries;
 use Laravel\Lumen\Console\Kernel as ConsoleKernel;
-use App\Console\Commands\ExtractTextFromHtmlPagePieces;
 use App\Console\Commands\RemoveDuplicatePagePieces;
+use App\Console\Commands\CreatePagePiecesTrainingSet;
+use App\Console\Commands\CreateJSONLForClassification;
+use App\Console\Commands\ExtractTextFromHtmlPagePieces;
 
 class Kernel extends ConsoleKernel
 {
@@ -24,7 +26,8 @@ class Kernel extends ConsoleKernel
         ExtractTextFromHtmlPagePieces::class,
         RemoveDuplicatePagePieces::class,
         CreateJSONLDataSet::class,
-        CreateJSONLForClassification::class
+        CreateCSVForClassification::class,
+        CreatePagePiecesTrainingSet::class
     ];
 
     /**

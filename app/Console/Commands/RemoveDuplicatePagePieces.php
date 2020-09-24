@@ -16,6 +16,9 @@ use Illuminate\Support\Facades\Schema;
 use App\Listeners\ForeignMinistryCrawlObserver;
 use Illuminate\Database\Eloquent\Builder;
 
+/**
+ * Removes duplicate page pieces
+ */
 class RemoveDuplicatePagePieces extends Command
 {
     /**
@@ -30,7 +33,7 @@ class RemoveDuplicatePagePieces extends Command
      *
      * @var string
      */
-    protected $description = 'Foreign Ministries';
+    protected $description = 'Removes duplicate page pieces';
 
     /**
      * Create a new command instance.
@@ -52,8 +55,6 @@ class RemoveDuplicatePagePieces extends Command
         $pagePiecesToCompare = PagePiece::with("ForeignMinistryPage")->get();
 
         foreach ($pagePieces as $pagePiece) {
-
-            dump($pagePiece->id);
 
             $pNodes = $dom
                 ->loadStr($pagePiece->html)
@@ -103,10 +104,7 @@ class RemoveDuplicatePagePieces extends Command
                 );
 
                 if (count($matchingSentences) >= 2) {
-                    dump($compareArray[max(array_keys($compareArray))]->text);
                     print_r($compareArray[$smallerWordsCount]->text);
-                    dump($matchingSentences);
-
                     $compareArray[$smallerWordsCount]->delete();
                 }
             }

@@ -16,6 +16,9 @@ use Illuminate\Support\Facades\Schema;
 use App\Listeners\ForeignMinistryCrawlObserver;
 use Illuminate\Database\Eloquent\Builder;
 
+/**
+ * Extracts text from html
+ */
 class ExtractTextFromHtmlPagePieces extends Command
 {
     /**
@@ -30,7 +33,7 @@ class ExtractTextFromHtmlPagePieces extends Command
      *
      * @var string
      */
-    protected $description = 'Crawls Foreign Ministries';
+    protected $description = 'Extracts text from html';
 
     /**
      * Create a new command instance.
@@ -44,21 +47,11 @@ class ExtractTextFromHtmlPagePieces extends Command
 
     public function handle(Dom $dom)
     {
-        $pagePieces = true;
+        $pagePieces = PagePiece::all();
 
-        while (true) {
-            $pagePieces = PagePiece::where("text", "")
-                ->take(100)
-                ->get();
-                
-            if ($pagePieces->isEmpty()) {
-                break;
-            }
-
-            foreach ($pagePieces as $piece) {
-                $piece->text = $dom->loadStr($piece->html)->root->text(true);
-                $piece->saveOrFail();
-            }
+        foreach ($pagePieces as $piece) {
+            $piece->text = $dom->loadStr($piece->html)->root->text(true);
+            $piece->saveOrFail();
         }
     }
 }

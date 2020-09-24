@@ -6,21 +6,24 @@ use App\Models\Event;
 use App\Models\PagePiece;
 use Illuminate\Console\Command;
 
-class CreateJSONLForClassification extends Command
+/**
+ * Create a classification training dataset as csv file
+ */
+class CreateCSVForClassification extends Command
 {
     /**
      * The name and signature of the console command.
      *
      * @var string
      */
-    protected $signature = 'create:jsonl:classification';
+    protected $signature = 'create:csv:classification';
 
     /**
      * The console command description.
      *
      * @var string
      */
-    protected $description = 'Create training dataset as JSONL file';
+    protected $description = 'Create a classification training dataset as csv file';
 
     /**
      * Execute the console command.

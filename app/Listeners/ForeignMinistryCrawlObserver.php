@@ -22,11 +22,23 @@ class ForeignMinistryCrawlObserver extends CrawlObserver
         $this->filterService = app(HtmlFilterService::class);
     }
 
+      /**
+     * Called when the crawler will crawl the url.
+     *
+     * @param \Psr\Http\Message\UriInterface $url
+     */
+    public function willCrawl(UriInterface $url)
+    {
+        dump("will visit " . $url->__toString());
+    }
+
     public function crawled(
         UriInterface $url,
         ResponseInterface $response,
         ?UriInterface $foundOnUrl = null
     ) {
+        dump("visiting " . $url->__toString());
+
         $this->filterService->handleCrawled(
             $url,
             $response,

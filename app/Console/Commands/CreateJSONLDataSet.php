@@ -15,6 +15,9 @@ use PHPHtmlParser\Dom\InnerNode;
 use PHPHtmlParser\Dom\Collection;
 use PHPHtmlParser\Exceptions\EmptyCollectionException;
 
+/**
+ * Create training datatset as JSONL file
+ */
 class CreateJSONLDataSet extends Command
 {
     /**
@@ -33,10 +36,8 @@ class CreateJSONLDataSet extends Command
 
     /**
      * Execute the console command.
-     *
-     * @param  \App\DripEmailer  $drip
-     * @return mixed
-     */
+     * 
+     * */
     public function handle()
     {
         $events = Event::with(['Person', 'PagePiece', 'Location'])
@@ -54,9 +55,6 @@ class CreateJSONLDataSet extends Command
             $text = html_entity_decode(
                 trim($event->PagePiece[0]->text)
             );
-
-            // dump($text);
-            // dump($event->id);
 
             foreach ($event->Person as $person) {
                 $annotations[] = $this->getAnnotation(
@@ -118,9 +116,6 @@ class CreateJSONLDataSet extends Command
             null,
             "UTF-8"
         );
-
-        // dump($needle);
-        // dump($startOffset);
 
         if (!\is_int($startOffset)) {
             dump($haystack);
